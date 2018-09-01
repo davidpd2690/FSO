@@ -13,7 +13,6 @@ int main(int argc, char const *argv[])
     
     int i;
     int pid, pidArr, sd;
-   // int status;
     int endProcess;
 
     int *shutdown = 0;
