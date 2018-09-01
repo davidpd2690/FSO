@@ -55,7 +55,7 @@ int main(int argc, char const *argv[])
 
                 if (credentialValidation(user,password) == 1)
                 {   
-                    printf("Welcome\n");
+                    printf("Login successful\n");
                     login = 1;
                 }
 
@@ -70,7 +70,6 @@ int main(int argc, char const *argv[])
     else if(pid2 > 0)
     {
         
-
         while (!*shutdown)
         {
             sleep(4);
@@ -80,7 +79,7 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-int credentialValidation(char *user, char*password)
+int credentialValidation(char *user, char *password)
 {
     FILE* fid;
     fpos_t position;
@@ -111,7 +110,7 @@ int credentialValidation(char *user, char*password)
             {
                 return 1;
             }
-           // else printf("login is incorrect, try again\n");
+
         }
 
         fgetpos(fid,&position);
