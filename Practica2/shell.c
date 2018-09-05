@@ -4,33 +4,32 @@
 #include <sys/wait.h>
 #include <string.h>
 
-#define PBUFSIZE 64         //intital size for parsing buffer
-#define PDELIM " \n\r\a\t"  //delimiter characters for parsing 
+#define PBUFSIZE 64         
+#define PDELIM " \n"  
+
+
+int executeCmd(char **args);
+
+char *readLine(void);
+char **parseLine(char *line);
+
+void shellLoop(void);
 
 int main(int argc, char const *argv[])
-{
-    shellLoop();
-
-    return EXIT_SUCCESS;
-}
-
-void shellLoop(void)
 {
     char *line;
     char **args;
     int status;
 
-    while (status)
+    while (&status)
     {
-        printf("> ");
+        printf("sh > ");
         line = readLine();
         args = parseLine(line);
-        status = runShell(args);
-
-        free(line);
-        free(args);
+        status = executeCmd(args);
     }
 
+    return EXIT_SUCCESS;
 }
 
 char *readLine(void)
@@ -65,7 +64,7 @@ char **parseLine(char *line)
             tokens = realloc(tokens, bufferSize * sizeof(char*));
             if(!tokens)
             {
-                printf("memory allocation failure \n");
+                printf("memory re-allocation failure \n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -78,7 +77,7 @@ char **parseLine(char *line)
 
 }
 
-int launchShell(char **args)
+int executeCmd(char **args)
 {
     pid_t pid1, pid2;
     int status;
@@ -86,28 +85,38 @@ int launchShell(char **args)
     pid1 = fork();
     if(pid1 == 0)   //child process
     {
+        
+        if(strcmp(args[0], "exit") == 0)
+        {
+            kill(getpid(), SIGQUIT);
+        }
+        
         if (execvp(args[0], args) == -1)
         {
-            perror("shell");
+            printf("error executing command/command not found\n");
         }
-        exit(EXIT_FAILURE);
+
     } 
     
     else if(pid1<0)   //error with fork()
     {
-        perror("shell");
+        printf("error forking\n");
     }
 
     else //parent process
     {
-        while(!WIFEXITED(status) && !WIFSIGNALED(status))
+        while(!&status)
         {
-            pid2 = waitpid(pid1, status, WUNTRACED);
+            pid2 = waitpid(pid1, &status, WUNTRACED);
         }
+
     }
 
     return 1;
 }
+
+
+
 
 
 
