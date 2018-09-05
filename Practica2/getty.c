@@ -3,24 +3,24 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
-#include <fcntl.h>
 
 #define PBUFSIZE 64 
+#define FILENAME "passwd.txt"
 
-int credentialValidation(char *user, char*password);
+int login(char *user, char*password);
 
 int main(int argc, char const *argv[])
 {
-    int pid1, pid2;
+    pid_t pid1, pid2;
+
     int status;
-    int id = 0;
     int bufferSize = PBUFSIZE;
 
     int *pid1ptr, *pid2ptr;
-    int *pids;
     int *shutdown;
-    char *token;
-    char *tokens = malloc(bufferSize * sizeof(char*));
+
+    char *input;
+
     char *user = malloc(bufferSize * sizeof(char*));
     char *password = malloc(bufferSize * sizeof(char*));
     
@@ -28,94 +28,99 @@ int main(int argc, char const *argv[])
     pid2ptr = (int*) malloc(pid2 * sizeof(int));
 
     shutdown = pid1ptr;
-    pids = pid2ptr;
+
     
     pid2 = fork();
-    printf("pid2: %d\n", pid2);
+    if (pid2 < 0)
+    {
+        printf("error forking\n");
+        exit(0);
+    }
+
     if(pid2 == 0)
     {
-        int login = 0;
-        while(1)
+        int flag = 0;
+
+        while(flag == 0)
         {
-            while(login == 0)
+            printf("User: \n");
+            fgets(input, sizeof(input), stdin);
+            sscanf(input, "%s", user);
+
+            printf("Password: \n");
+            fgets(input, sizeof(input), stdin);
+            sscanf(input, "%s", password);
+                
+
+            if (login(user,password) == 1)
+            {   
+                flag = 1;
+            }
+
+            else 
             {
-                printf("User: \n");
+                printf("login is incorrect, try again\n");
+                flag = 0;
+            }
+        } 
 
-                if(fgets(tokens, sizeof(tokens), stdin))
-                {
-                    if(sscanf(tokens, "%s", user) == 1);
-                }
+        pid1 = fork();
 
-                printf("Password: \n");
-
-                if(fgets(tokens, sizeof(tokens), stdin))
-                {
-                    if(sscanf(tokens, "%s", password) == 1);
-                }
-
-                if (credentialValidation(user,password) == 1)
-                {   
-                    printf("Login successful\n");
-                    login = 1;
-                }
-
-                else 
-                {
-                    printf("login is incorrect, try again\n");
-                    login = 0;
-                }
-            }   
+        if(pid1 == 0)
+        {
+            execlp("./shell.exe", "./shell.exe", (char*)NULL);
         }
+
+        else wait(&status);
+
+        flag = 0;
+
     }
+
     else if(pid2 > 0)
     {
-        
         while (!*shutdown)
         {
-            sleep(4);
+            wait(&status);
         }
     }
 
     return 0;
 }
 
-int credentialValidation(char *user, char *password)
+
+
+int login(char *user, char *password)
 {
-    FILE* fid;
-    fpos_t position;
-    int initP = 0;
     int bufferSize = PBUFSIZE;
 
     char *userInput = malloc(bufferSize * sizeof(char*));
     char *passwordInput = malloc(bufferSize * sizeof(char*));
 
-    if((fid = fopen("passwd.txt", "rw+")) == NULL)
+    FILE *file;
+
+    file = fopen(FILENAME, "rw+");
+
+    if(file == NULL)
     {
         printf("error opening file\n");
         sleep(4);
-        fclose(fid);
+        fclose(file);
         return 0;
     }
 
-    if(initP)
+    while(!feof(file))
     {
-        fsetpos(fid, &position);
-    }
-
-    while(!feof(fid))
-    {
-        if(fscanf(fid, "%s : %s", userInput, passwordInput))
+        fscanf(file, "%s : %s", userInput, passwordInput);
+        
+        if(strcmp(userInput, user) == 0 && strcmp(passwordInput, password) == 0)
         {
-            if(strcmp(userInput, user) == 0 && strcmp(passwordInput, password) == 0)
-            {
-                return 1;
-            }
-
+            return 1;
         }
 
-        fgetpos(fid,&position);
-        initP = 1;
     }
 
     return 0;
 }
+
+
