@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
-#include <signal.h>
 
 #define NPROCS 6
 
@@ -12,16 +11,16 @@ int main(int argc, char const *argv[])
     pid_t pidt;
     
     int i;
-    int pid, pidArr, sd;
-    int endProcess;
+    int pid,status;
+    int killproc;
 
     int *shutdown = 0;
     int *sdptr;
     int *pids;
     int *pidsptr;
 
-    sdptr = (int*) malloc(sd * sizeof(int));
-    pidsptr = (int*) malloc(pidArr * sizeof(int));
+    sdptr = (int*) malloc(status * sizeof(int));
+    pidsptr = (int*) malloc(pid * sizeof(int));
 
     shutdown = sdptr;
     pids = pidsptr;
@@ -32,7 +31,7 @@ int main(int argc, char const *argv[])
 
         if(pid == 0)
         {
-            execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", "./getty.exe", NULL);
+            execlp("/usr/bin/xterm", "/usr/bin/xterm", "-e", "./getty.exe", NULL);
         }
 
         else pids[i] = pid;
@@ -41,17 +40,19 @@ int main(int argc, char const *argv[])
 
     while(!*shutdown)
     {
+        pidt = wait(&status);
+
         for(i = 0; i < NPROCS; i++)
         {
-            endProcess = kill(pids[i], 0);
-            if(endProcess < 0)
+            killproc = kill(pids[i], 0);
+            if(killproc < 0)
             {
                 pid = fork();
             }
 
             if(pid == 0)
             {
-                execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", "./getty.exe", NULL);
+                execlp("/usr/bin/xterm", "/usr/bin/xterm", "-e", "./getty.exe", NULL);
             }
         }
     }
