@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <sys/time.h>
 
+#define NTHREADS 4
+
 void *leibniz(void *thread);
 
 long double result = 0.0;
@@ -15,11 +17,9 @@ struct timeval ts;
 
 int main(int argc, char const *argv[])
 {
-    pthread_t tid1;
-    pthread_t tid2;
-
-    int treturn1, treturn2;
-    long i;
+    int i;
+    pthread_t tids[NTHREADS];
+    int parr[NTHREADS];
 
     printf("Number of iterations: \n");
     scanf("%ld", &niterations);
@@ -27,31 +27,16 @@ int main(int argc, char const *argv[])
     gettimeofday(&ts, NULL);
     start_ts = ts.tv_sec * 1000000 + ts.tv_usec;
 
-    treturn1 = pthread_create(&tid1, NULL, leibniz,(void *)i);
-    treturn2 = pthread_create(&tid2, NULL, leibniz,(void *)i);
-
-    if(treturn1)
+    for(i=0;i<NTHREADS;i++)
     {
-        printf("error creating thread1, error code %d\n", treturn1);
+        parr[i] = i;
+        pthread_create(&tids[i], NULL, leibniz, (void *) &parr[i]);
     }
-
-    if(treturn2)
+    
+    
+    for(i=0;i<NTHREADS;i++)
     {
-        printf("error creating thread2, error code %d\n", treturn2);
-    }
-
-
-    treturn1 = pthread_join(tid1, NULL);
-    treturn2 = pthread_join(tid2, NULL);
-         
-    if(treturn1)
-    {
-        printf("error joining thread1, error code %d\n", treturn1);
-    }
-
-    if(treturn2)
-    {
-        printf("error joining thread2, error code %d\n", treturn2);
+        pthread_join(tids[i], NULL);
     }
 
     gettimeofday(&ts, NULL);
@@ -59,17 +44,17 @@ int main(int argc, char const *argv[])
 
     elapsed_time = (int)(stop_ts - start_ts);
 
-    printf("result: %Lf\n", result/4);
     printf("time: %d microseconds\n", elapsed_time);
 
     return 0;
 }
 
 
-void *leibniz(void *arg)
+void *leibniz(void *args)
 {
     long double lresult = 0.0;
-    long i = (long)arg;
+    long i;
+    int nthread = *((int *) args);
 
         for(i=0; i<niterations; i++)
     {
@@ -78,6 +63,6 @@ void *leibniz(void *arg)
 
     }
 
-    result += lresult * 2;
+    printf("result: %Lf\n", lresult);
 
 }
