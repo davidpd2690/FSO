@@ -8,9 +8,12 @@
 #include <stdlib.h>
 #include <signal.h>
 
-int leibniz(void *arg);
 
-long double result = 0.0;
+#define STACKSIZE 4096
+#define NTHREADS 4
+
+int leibniz(void *args);
+
 long niterations;
 long long start_ts;
 long long stop_ts;
@@ -18,47 +21,14 @@ int elapsed_time;
 
 struct timeval ts;
 
-int main(int argc, char const *argv[])
-{
+void *child_stack;
 
-    void *stack;
-    stack = malloc(1024 * 1024);
-    if(!stack) 
-    {
-        printf("memory allocation failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Number of iterations: \n");
-    scanf("%ld", &niterations);
-
-    gettimeofday(&ts, NULL);
-    start_ts = ts.tv_sec * 1000000 + ts.tv_usec;
-
-    int pid = clone(*leibniz, stack + (1024 + 1024), SIGCHLD, 0);
-    if ( pid < 0 ) 
-    {
-        printf("error creating the child process.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    gettimeofday(&ts, NULL);
-    stop_ts = ts.tv_sec * 1000000 + ts.tv_usec;
-
-    elapsed_time = (int)(stop_ts - start_ts);
-
-    printf("result: %Lf\n", result/4);
-    printf("time: %d microseconds\n", elapsed_time);
-
-    return 0;
-}
-
-
-int leibniz(void *arg)
+int leibniz(void *args)
 {
     long double lresult = 0.0;
-    long i;// = atoi(arg);
+    long i;
 
+    printf("executing function...\n");
         for(i=0; i<niterations; i++)
     {
 
@@ -66,6 +36,42 @@ int leibniz(void *arg)
 
     }
 
-    result += lresult * 2;
+    printf("result: %Lf\n", lresult);
 
+
+    printf("ending function...\n");
+    //return 0;
+}
+
+int main(int argc, char const *argv[])
+{
+
+    printf("process id: %u\n", getpid());
+    child_stack = malloc(STACKSIZE * 32);
+    int i;
+    int arr[NTHREADS], threadids[NTHREADS];
+
+    printf("Number of iterations: \n");
+    scanf("%ld", &niterations);
+
+    gettimeofday(&ts, NULL);
+    start_ts = ts.tv_sec * 1000000 + ts.tv_usec;
+
+    for(i=0;i<NTHREADS;i++)
+    {
+        arr[i] = i;
+        printf("creating new thread...\n");
+        threadids[i] = clone(&leibniz, (char *)child_stack + STACKSIZE * 16, SIGCHLD|CLONE_SIGHAND|CLONE_VM, (void *)&arr[i]);
+        printf("thread id: %d\n", threadids[i]);
+    }
+
+    gettimeofday(&ts, NULL);
+    stop_ts = ts.tv_sec * 1000000 + ts.tv_usec;
+
+    elapsed_time = (int)(stop_ts - start_ts);
+
+    printf("time: %d microseconds\n", elapsed_time);
+
+    free(child_stack);
+    return 0;
 }
